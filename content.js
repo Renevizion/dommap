@@ -251,6 +251,10 @@
     let zoom = 1;
     const ZOOM_MIN = 0.25;
     const ZOOM_MAX = 2.4;
+    const ZOOM_STEP_WHEEL_IN = 1.08;
+    const ZOOM_STEP_WHEEL_OUT = 0.92;
+    const ZOOM_STEP_BUTTON_IN = 1.12;
+    const ZOOM_STEP_BUTTON_OUT = 0.9;
     const zoomWrap = document.createElement("div");
     Object.assign(zoomWrap.style, {
       position: "absolute",
@@ -477,14 +481,16 @@
         `${collected.length} elements  ·  max depth ${maxDepth}  ·  zoom ${Math.round(zoom * 100)}%`;
     }
 
-    const zoomOutBtn = makeZoomBtn("−", "Zoom out", () => updateZoom(0.9));
-    const zoomResetBtn = makeZoomBtn("100%", "Reset zoom", () => {
+    function resetZoom() {
       zoom = 1;
       applyStageTransform();
       countBadge.textContent =
         `${collected.length} elements  ·  max depth ${maxDepth}  ·  zoom ${Math.round(zoom * 100)}%`;
-    });
-    const zoomInBtn = makeZoomBtn("+", "Zoom in", () => updateZoom(1.12));
+    }
+
+    const zoomOutBtn = makeZoomBtn("−", "Zoom out", () => updateZoom(ZOOM_STEP_BUTTON_OUT));
+    const zoomResetBtn = makeZoomBtn("100%", "Reset zoom", resetZoom);
+    const zoomInBtn = makeZoomBtn("+", "Zoom in", () => updateZoom(ZOOM_STEP_BUTTON_IN));
     zoomWrap.appendChild(zoomOutBtn);
     zoomWrap.appendChild(zoomResetBtn);
     zoomWrap.appendChild(zoomInBtn);
@@ -516,7 +522,7 @@
     xrayOverlay.addEventListener("mousedown", onMouseDown);
     xrayOverlay.addEventListener("wheel", (e) => {
       e.preventDefault();
-      updateZoom(e.deltaY > 0 ? 0.92 : 1.08);
+      updateZoom(e.deltaY > 0 ? ZOOM_STEP_WHEEL_OUT : ZOOM_STEP_WHEEL_IN);
     }, { passive: false });
     window.addEventListener("mousemove",  onMouseMove);
     window.addEventListener("mouseup",    onMouseUp);
@@ -524,14 +530,9 @@
     // Escape key
     function onKeyDown(e) {
       if (e.key === "Escape") closeXRayView();
-      if (e.key === "+" || e.key === "=") updateZoom(1.08);
-      if (e.key === "-") updateZoom(0.92);
-      if (e.key === "0") {
-        zoom = 1;
-        applyStageTransform();
-        countBadge.textContent =
-          `${collected.length} elements  ·  max depth ${maxDepth}  ·  zoom ${Math.round(zoom * 100)}%`;
-      }
+      if (e.key === "+" || e.key === "=") updateZoom(ZOOM_STEP_WHEEL_IN);
+      if (e.key === "-") updateZoom(ZOOM_STEP_WHEEL_OUT);
+      if (e.key === "0") resetZoom();
     }
     document.addEventListener("keydown", onKeyDown);
 
