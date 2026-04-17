@@ -390,6 +390,16 @@
 
     // ── Cards ─────────────────────────────────────────────────────────────
     let selectedCard = null;
+    const SELECTED_CARD_GLOW = "0 0 18px rgba(120,200,255,0.85), 0 0 7px rgba(255,255,255,0.15)";
+
+    function setSelectedCard(card) {
+      if (selectedCard && selectedCard !== card) {
+        selectedCard.style.boxShadow = "";
+      }
+      selectedCard = card;
+      if (selectedCard) selectedCard.style.boxShadow = SELECTED_CARD_GLOW;
+    }
+
     collected.forEach(({ node, rect, depth }) => {
       const tag     = node.tagName.toLowerCase();
       const bgColor = elBg(tag);
@@ -450,18 +460,14 @@
       card.addEventListener("mouseleave", () => {
         card.style.background  = bgColor;
         card.style.borderColor = bdColor;
-        card.style.boxShadow   = (card === selectedCard) ? `0 0 18px ${bdColor}, 0 0 7px rgba(255,255,255,0.15)` : "";
+        card.style.boxShadow   = (card === selectedCard) ? SELECTED_CARD_GLOW : "";
       });
 
       // Click: keep view open, focus element card, copy selector
       card.addEventListener("click", (e) => {
         e.stopPropagation();
         const sel = getCssSelector(node);
-        if (selectedCard && selectedCard !== card) {
-          selectedCard.style.boxShadow = "";
-        }
-        selectedCard = card;
-        card.style.boxShadow = `0 0 18px ${bdColor}, 0 0 7px rgba(255,255,255,0.15)`;
+        setSelectedCard(card);
         infoBar.textContent = `${sel}  ·  ${Math.round(rect.width)}×${Math.round(rect.height)}  ·  depth ${depth}`;
         if (navigator.clipboard) {
           navigator.clipboard.writeText(sel).catch(() => {});
@@ -536,9 +542,16 @@
       const isZoomInKey = e.key === "+" || e.key === "=" || e.code === "NumpadAdd";
       const isZoomOutKey = e.key === "-" || e.code === "NumpadSubtract";
       const isZoomResetKey = e.key === "0" || e.code === "Digit0" || e.code === "Numpad0";
-      if (isZoomInKey) updateZoom(ZOOM_STEP_BUTTON_IN);
-      else if (isZoomOutKey) updateZoom(ZOOM_STEP_BUTTON_OUT);
-      else if (isZoomResetKey) resetZoom();
+      if (isZoomInKey) {
+        e.preventDefault();
+        updateZoom(ZOOM_STEP_BUTTON_IN);
+      } else if (isZoomOutKey) {
+        e.preventDefault();
+        updateZoom(ZOOM_STEP_BUTTON_OUT);
+      } else if (isZoomResetKey) {
+        e.preventDefault();
+        resetZoom();
+      }
     }
     document.addEventListener("keydown", onKeyDown);
 
