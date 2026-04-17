@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 264px;
+      background: #080f1e;
+      color: #b8d4f0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      user-select: none;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid rgba(100, 200, 255, 0.12);
+    }
+    .header img { width: 28px; height: 28px; }
+    .title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #e4f2ff;
+      letter-spacing: 0.02em;
+    }
+    .subtitle {
+      font-size: 10px;
+      color: rgba(100, 160, 220, 0.6);
+      margin-top: 2px;
+    }
+
+    /* ── Section ─────────────────────────────────────────────────────────── */
+    .section {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(100, 200, 255, 0.08);
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .label-group { flex: 1; }
+    .label-title { color: #dceeff; font-size: 12px; margin-bottom: 2px; }
+    .label-sub   { color: rgba(100, 160, 220, 0.55); font-size: 10px; line-height: 1.4; }
+
+    /* ── Toggle switch ───────────────────────────────────────────────────── */
+    .toggle-wrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .status-text { font-size: 11px; color: rgba(100, 160, 220, 0.5); min-width: 22px; text-align: right; }
+    .status-text.on { color: #00d4ff; }
+
+    .toggle { position: relative; width: 42px; height: 23px; }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #111d30;
+      border: 1px solid rgba(100, 200, 255, 0.25);
+      border-radius: 23px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 17px; height: 17px;
+      left: 2px; top: 2px;
+      background: #3a5878;
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    input:checked + .slider {
+      background: #042035;
+      border-color: rgba(0, 212, 255, 0.6);
+    }
+    input:checked + .slider::before {
+      transform: translateX(19px);
+      background: #00d4ff;
+      box-shadow: 0 0 8px rgba(0, 212, 255, 0.7);
+    }
+
+    /* ── 3D Button ───────────────────────────────────────────────────────── */
+    .btn-xray {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 11px 12px;
+      background: linear-gradient(135deg, rgba(0, 70, 160, 0.45), rgba(0, 30, 90, 0.65));
+      border: 1px solid rgba(0, 212, 255, 0.38);
+      border-radius: 7px;
+      color: #00d4ff;
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+      letter-spacing: 0.01em;
+    }
+    .btn-xray:hover {
+      background: linear-gradient(135deg, rgba(0, 90, 200, 0.55), rgba(0, 50, 130, 0.75));
+      border-color: rgba(0, 212, 255, 0.65);
+      box-shadow: 0 0 14px rgba(0, 212, 255, 0.18);
+    }
+    .btn-icon { font-size: 16px; line-height: 1; }
+    .shortcut-hint {
+      font-size: 10px;
+      color: rgba(100, 160, 220, 0.45);
+      text-align: center;
+      margin-top: 7px;
+    }
+
+    /* ── Key badge ───────────────────────────────────────────────────────── */
+    .key {
+      display: inline-block;
+      background: rgba(100, 200, 255, 0.1);
+      border: 1px solid rgba(100, 200, 255, 0.22);
+      border-radius: 3px;
+      padding: 0 5px;
+      font-size: 10px;
+      color: rgba(150, 210, 255, 0.65);
+    }
+
+    /* ── Footer hint ─────────────────────────────────────────────────────── */
+    .footer-hint {
+      padding: 10px 16px;
+      font-size: 10px;
+      color: rgba(100, 150, 200, 0.45);
+      text-align: center;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <img src="icons/icon.svg" alt=""/>
+    <div>
+      <div class="title">DOM Explorer</div>
+      <div class="subtitle">Blueprint for your web environment</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="row">
+      <div class="label-group">
+        <div class="label-title">Hover Inspector</div>
+        <div class="label-sub">Highlight elements &amp; show CSS selectors</div>
+      </div>
+      <div class="toggle-wrap">
+        <span class="status-text on" id="statusText">ON</span>
+        <label class="toggle">
+          <input type="checkbox" id="enableToggle" checked/>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <button class="btn-xray" id="xrayBtn">
+      <span class="btn-icon">◈</span>
+      Open 3D X-Ray View
+    </button>
+    <div class="shortcut-hint">
+      Also: <span class="key">Alt</span> + <span class="key">D</span> on any page
+    </div>
+  </div>
+
+  <div class="footer-hint">
+    Click an element in the 3D view to highlight it<br/>and copy its CSS selector to your clipboard
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
