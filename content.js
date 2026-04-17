@@ -533,9 +533,12 @@
     // Escape key
     function onKeyDown(e) {
       if (e.key === "Escape") closeXRayView();
-      if (e.key === "+" || e.key === "=") updateZoom(ZOOM_STEP_BUTTON_IN);
-      if (e.key === "-") updateZoom(ZOOM_STEP_BUTTON_OUT);
-      if (e.key === "0") resetZoom();
+      const isZoomInKey = e.key === "+" || e.key === "=" || e.code === "NumpadAdd";
+      const isZoomOutKey = e.key === "-" || e.code === "NumpadSubtract";
+      const isZoomResetKey = e.key === "0" || e.code === "Digit0" || e.code === "Numpad0";
+      if (isZoomInKey) updateZoom(ZOOM_STEP_BUTTON_IN);
+      else if (isZoomOutKey) updateZoom(ZOOM_STEP_BUTTON_OUT);
+      else if (isZoomResetKey) resetZoom();
     }
     document.addEventListener("keydown", onKeyDown);
 

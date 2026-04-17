@@ -55,7 +55,7 @@ Open it two ways:
 Once open:
 
 - **Drag** anywhere to rotate the 3D scene
-- **Mouse wheel** (or `+` / `-`) to zoom in and out
+- **Mouse wheel** (or `+` / `-`) to zoom in and out, and press `0` to reset zoom
 - **Hover** a card to see its CSS selector in the info bar
 - **Click** a card to inspect it in-place (keeps 3D mode open), pin its details in the info bar, and **copy its selector to your clipboard**
 - Press **`Esc`** or click **✕ Close** to exit
