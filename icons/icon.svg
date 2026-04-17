@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Dark background -->
+  <rect width="128" height="128" rx="16" fill="#0a1628"/>
+
+  <!-- Three stacked translucent planes suggesting layered 3D DOM -->
+  <!-- Back plane -->
+  <rect x="26" y="72" width="82" height="26" rx="4"
+        fill="rgba(0,80,180,0.15)" stroke="#4488ff" stroke-width="1.5" opacity="0.5"/>
+  <!-- Mid plane -->
+  <rect x="16" y="54" width="82" height="26" rx="4"
+        fill="rgba(0,100,200,0.2)" stroke="#4488ff" stroke-width="1.8" opacity="0.7"/>
+  <!-- Front plane -->
+  <rect x="6" y="36" width="82" height="26" rx="4"
+        fill="rgba(0,140,255,0.18)" stroke="#00d4ff" stroke-width="2.2"/>
+
+  <!-- Isometric side-depth connectors -->
+  <line x1="88" y1="36" x2="98" y2="54" stroke="#4488ff" stroke-width="1.2" opacity="0.45"/>
+  <line x1="88" y1="62" x2="98" y2="80" stroke="#4488ff" stroke-width="1.2" opacity="0.3"/>
+  <line x1="88" y1="80" x2="98" y2="98" stroke="#4488ff" stroke-width="1.2" opacity="0.2"/>
+  <line x1="98" y1="54" x2="98" y2="80" stroke="#4488ff" stroke-width="1.2" opacity="0.3"/>
+  <line x1="98" y1="80" x2="98" y2="98" stroke="#4488ff" stroke-width="1.2" opacity="0.2"/>
+
+  <!-- Element indicators on front plane -->
+  <rect x="14" y="44" width="22" height="6" rx="2" fill="#00d4ff" opacity="0.75"/>
+  <rect x="42" y="44" width="36" height="6" rx="2" fill="#00d4ff" opacity="0.45"/>
+
+  <!-- Element indicators on mid plane -->
+  <rect x="24" y="62" width="14" height="5" rx="2" fill="#4488ff" opacity="0.6"/>
+  <rect x="44" y="62" width="28" height="5" rx="2" fill="#4488ff" opacity="0.4"/>
+
+  <!-- Glow dot bottom-right -->
+  <circle cx="110" cy="110" r="7" fill="#00d4ff" opacity="0.5"/>
+  <circle cx="110" cy="110" r="3" fill="#00d4ff" opacity="0.9"/>
+</svg>
