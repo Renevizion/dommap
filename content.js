@@ -223,7 +223,7 @@
     helpBar.innerHTML =
       "<span>🖱 <b>Drag</b> to rotate</span>" +
       "<span>🖱 <b>Wheel</b> to zoom</span>" +
-      "<span>🖱 <b>Click</b> element to inspect</span>" +
+      "<span>🖱 <b>Click</b> element to select</span>" +
       "<span>⌨ <b>Esc</b> to close</span>";
     xrayOverlay.appendChild(helpBar);
 
@@ -250,11 +250,11 @@
     // Zoom controls (top-right, below close)
     let zoom = 1;
     const ZOOM_MIN = 0.25;
-    const ZOOM_MAX = 2.4;
+    const ZOOM_MAX = 2.5;
     const ZOOM_STEP_WHEEL_IN = 1.08;
-    const ZOOM_STEP_WHEEL_OUT = 0.92;
+    const ZOOM_STEP_WHEEL_OUT = 1 / ZOOM_STEP_WHEEL_IN;
     const ZOOM_STEP_BUTTON_IN = 1.12;
-    const ZOOM_STEP_BUTTON_OUT = 0.9;
+    const ZOOM_STEP_BUTTON_OUT = 1 / ZOOM_STEP_BUTTON_IN;
     const zoomWrap = document.createElement("div");
     Object.assign(zoomWrap.style, {
       position: "absolute",
@@ -474,18 +474,21 @@
     scene.appendChild(stage);
     xrayOverlay.appendChild(scene);
 
+    function updateCountBadge() {
+      countBadge.textContent =
+        `${collected.length} elements  ·  max depth ${maxDepth}  ·  zoom ${Math.round(zoom * 100)}%`;
+    }
+
     function updateZoom(delta) {
       zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom * delta));
       applyStageTransform();
-      countBadge.textContent =
-        `${collected.length} elements  ·  max depth ${maxDepth}  ·  zoom ${Math.round(zoom * 100)}%`;
+      updateCountBadge();
     }
 
     function resetZoom() {
       zoom = 1;
       applyStageTransform();
-      countBadge.textContent =
-        `${collected.length} elements  ·  max depth ${maxDepth}  ·  zoom ${Math.round(zoom * 100)}%`;
+      updateCountBadge();
     }
 
     const zoomOutBtn = makeZoomBtn("−", "Zoom out", () => updateZoom(ZOOM_STEP_BUTTON_OUT));
@@ -530,8 +533,8 @@
     // Escape key
     function onKeyDown(e) {
       if (e.key === "Escape") closeXRayView();
-      if (e.key === "+" || e.key === "=") updateZoom(ZOOM_STEP_WHEEL_IN);
-      if (e.key === "-") updateZoom(ZOOM_STEP_WHEEL_OUT);
+      if (e.key === "+" || e.key === "=") updateZoom(ZOOM_STEP_BUTTON_IN);
+      if (e.key === "-") updateZoom(ZOOM_STEP_BUTTON_OUT);
       if (e.key === "0") resetZoom();
     }
     document.addEventListener("keydown", onKeyDown);
