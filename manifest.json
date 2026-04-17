@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "DOM Explorer Blueprint",
+  "version": "1.0.0",
+  "description": "Highlights hovered elements and shows their CSS selectors.",
+  "action": {
+    "default_title": "DOM Explorer Blueprint"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
