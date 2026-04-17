@@ -55,8 +55,9 @@ Open it two ways:
 Once open:
 
 - **Drag** anywhere to rotate the 3D scene
+- **Mouse wheel** (or `+` / `-`) to zoom in and out
 - **Hover** a card to see its CSS selector in the info bar
-- **Click** a card to: close the view, scroll the real element into view, flash it with a teal outline, and **copy its selector to your clipboard**
+- **Click** a card to inspect it in-place (keeps 3D mode open), pin its details in the info bar, and **copy its selector to your clipboard**
 - Press **`Esc`** or click **✕ Close** to exit
 
 ### Popup toggle
@@ -94,4 +95,3 @@ dommap/
 └── icons/
     └── icon.svg    Extension icon
 ```
-

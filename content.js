@@ -222,7 +222,8 @@
     });
     helpBar.innerHTML =
       "<span>🖱 <b>Drag</b> to rotate</span>" +
-      "<span>🖱 <b>Click</b> element to select</span>" +
+      "<span>🖱 <b>Wheel</b> to zoom</span>" +
+      "<span>🖱 <b>Click</b> element to inspect</span>" +
       "<span>⌨ <b>Esc</b> to close</span>";
     xrayOverlay.appendChild(helpBar);
 
@@ -246,6 +247,48 @@
     closeBtn.addEventListener("click", closeXRayView);
     xrayOverlay.appendChild(closeBtn);
 
+    // Zoom controls (top-right, below close)
+    let zoom = 1;
+    const ZOOM_MIN = 0.25;
+    const ZOOM_MAX = 2.4;
+    const zoomWrap = document.createElement("div");
+    Object.assign(zoomWrap.style, {
+      position: "absolute",
+      top: "44px",
+      right: "14px",
+      zIndex: "20",
+      display: "flex",
+      gap: "6px",
+      background: "rgba(0,0,0,0.5)",
+      border: "1px solid rgba(90,170,255,0.25)",
+      borderRadius: "7px",
+      padding: "6px",
+    });
+    xrayOverlay.appendChild(zoomWrap);
+
+    function makeZoomBtn(label, title, onClick) {
+      const btn = document.createElement("button");
+      btn.textContent = label;
+      btn.title = title;
+      Object.assign(btn.style, {
+        background: "rgba(20,45,85,0.65)",
+        color: "#bfe7ff",
+        border: "1px solid rgba(120,190,255,0.38)",
+        borderRadius: "5px",
+        minWidth: "26px",
+        height: "24px",
+        padding: "0 7px",
+        cursor: "pointer",
+        fontFamily: "ui-monospace, monospace",
+        fontSize: "12px",
+      });
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onClick();
+      });
+      return btn;
+    }
+
     // Element count badge (top-left)
     const countBadge = document.createElement("div");
     Object.assign(countBadge.style, {
@@ -262,7 +305,7 @@
       border: "1px solid rgba(80,140,255,0.2)",
       pointerEvents: "none",
     });
-    countBadge.textContent = `${collected.length} elements  ·  max depth ${maxDepth}`;
+    countBadge.textContent = `${collected.length} elements  ·  max depth ${maxDepth}  ·  zoom 100%`;
     xrayOverlay.appendChild(countBadge);
 
     // Legend (bottom-right)
@@ -337,7 +380,12 @@
       willChange: "transform",
     });
 
+    function applyStageTransform() {
+      stage.style.transform = `scale(${zoom}) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+    }
+
     // ── Cards ─────────────────────────────────────────────────────────────
+    let selectedCard = null;
     collected.forEach(({ node, rect, depth }) => {
       const tag     = node.tagName.toLowerCase();
       const bgColor = elBg(tag);
@@ -398,23 +446,19 @@
       card.addEventListener("mouseleave", () => {
         card.style.background  = bgColor;
         card.style.borderColor = bdColor;
-        card.style.boxShadow   = "";
+        card.style.boxShadow   = (card === selectedCard) ? `0 0 18px ${bdColor}, 0 0 7px rgba(255,255,255,0.15)` : "";
       });
 
-      // Click: close view, scroll to element, flash it, copy selector
+      // Click: keep view open, focus element card, copy selector
       card.addEventListener("click", (e) => {
         e.stopPropagation();
         const sel = getCssSelector(node);
-        closeXRayView();
-        const savedOutline = node.style.outline;
-        const savedOffset  = node.style.outlineOffset;
-        node.style.outline      = "3px solid #00ffcc";
-        node.style.outlineOffset = "2px";
-        node.scrollIntoView({ behavior: "smooth", block: "center" });
-        setTimeout(() => {
-          node.style.outline      = savedOutline;
-          node.style.outlineOffset = savedOffset;
-        }, 2800);
+        if (selectedCard && selectedCard !== card) {
+          selectedCard.style.boxShadow = "";
+        }
+        selectedCard = card;
+        card.style.boxShadow = `0 0 18px ${bdColor}, 0 0 7px rgba(255,255,255,0.15)`;
+        infoBar.textContent = `${sel}  ·  ${Math.round(rect.width)}×${Math.round(rect.height)}  ·  depth ${depth}`;
         if (navigator.clipboard) {
           navigator.clipboard.writeText(sel).catch(() => {});
         }
@@ -425,6 +469,25 @@
 
     scene.appendChild(stage);
     xrayOverlay.appendChild(scene);
+
+    function updateZoom(delta) {
+      zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom * delta));
+      applyStageTransform();
+      countBadge.textContent =
+        `${collected.length} elements  ·  max depth ${maxDepth}  ·  zoom ${Math.round(zoom * 100)}%`;
+    }
+
+    const zoomOutBtn = makeZoomBtn("−", "Zoom out", () => updateZoom(0.9));
+    const zoomResetBtn = makeZoomBtn("100%", "Reset zoom", () => {
+      zoom = 1;
+      applyStageTransform();
+      countBadge.textContent =
+        `${collected.length} elements  ·  max depth ${maxDepth}  ·  zoom ${Math.round(zoom * 100)}%`;
+    });
+    const zoomInBtn = makeZoomBtn("+", "Zoom in", () => updateZoom(1.12));
+    zoomWrap.appendChild(zoomOutBtn);
+    zoomWrap.appendChild(zoomResetBtn);
+    zoomWrap.appendChild(zoomInBtn);
 
     // ── Drag-to-rotate ────────────────────────────────────────────────────
     let dragging = false, dragX = 0, dragY = 0;
@@ -443,7 +506,7 @@
       rotX   = Math.max(-85, Math.min(85, rotX));
       dragX  = e.clientX;
       dragY  = e.clientY;
-      stage.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+      applyStageTransform();
     }
     function onMouseUp() {
       dragging = false;
@@ -451,12 +514,24 @@
     }
 
     xrayOverlay.addEventListener("mousedown", onMouseDown);
+    xrayOverlay.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      updateZoom(e.deltaY > 0 ? 0.92 : 1.08);
+    }, { passive: false });
     window.addEventListener("mousemove",  onMouseMove);
     window.addEventListener("mouseup",    onMouseUp);
 
     // Escape key
     function onKeyDown(e) {
       if (e.key === "Escape") closeXRayView();
+      if (e.key === "+" || e.key === "=") updateZoom(1.08);
+      if (e.key === "-") updateZoom(0.92);
+      if (e.key === "0") {
+        zoom = 1;
+        applyStageTransform();
+        countBadge.textContent =
+          `${collected.length} elements  ·  max depth ${maxDepth}  ·  zoom ${Math.round(zoom * 100)}%`;
+      }
     }
     document.addEventListener("keydown", onKeyDown);
 
@@ -476,7 +551,7 @@
 
     requestAnimationFrame(() => requestAnimationFrame(() => {
       stage.style.transition = "transform 0.55s cubic-bezier(0.23,1,0.32,1), opacity 0.35s ease";
-      stage.style.transform  = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+      applyStageTransform();
       stage.style.opacity    = "1";
     }));
   }
