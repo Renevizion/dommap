@@ -251,10 +251,11 @@
     let zoom = 1;
     const ZOOM_MIN = 0.25;
     const ZOOM_MAX = 2.5;
-    const ZOOM_STEP_WHEEL_IN = 1.08;
-    const ZOOM_STEP_WHEEL_OUT = 1 / ZOOM_STEP_WHEEL_IN;
-    const ZOOM_STEP_BUTTON_IN = 1.12;
-    const ZOOM_STEP_BUTTON_OUT = 1 / ZOOM_STEP_BUTTON_IN;
+    const ZOOM_STEP_IN = 1.08;
+    const ZOOM_STEP_OUT = 1 / ZOOM_STEP_IN;
+    const ZOOM_IN_KEYS = new Set(["+", "="]);
+    const ZOOM_OUT_KEYS = new Set(["-"]);
+    const ZOOM_RESET_KEYS = new Set(["0"]);
     const zoomWrap = document.createElement("div");
     Object.assign(zoomWrap.style, {
       position: "absolute",
@@ -497,9 +498,9 @@
       updateCountBadge();
     }
 
-    const zoomOutBtn = makeZoomBtn("−", "Zoom out", () => updateZoom(ZOOM_STEP_BUTTON_OUT));
+    const zoomOutBtn = makeZoomBtn("−", "Zoom out", () => updateZoom(ZOOM_STEP_OUT));
     const zoomResetBtn = makeZoomBtn("100%", "Reset zoom", resetZoom);
-    const zoomInBtn = makeZoomBtn("+", "Zoom in", () => updateZoom(ZOOM_STEP_BUTTON_IN));
+    const zoomInBtn = makeZoomBtn("+", "Zoom in", () => updateZoom(ZOOM_STEP_IN));
     zoomWrap.appendChild(zoomOutBtn);
     zoomWrap.appendChild(zoomResetBtn);
     zoomWrap.appendChild(zoomInBtn);
@@ -531,7 +532,7 @@
     xrayOverlay.addEventListener("mousedown", onMouseDown);
     xrayOverlay.addEventListener("wheel", (e) => {
       e.preventDefault();
-      updateZoom(e.deltaY > 0 ? ZOOM_STEP_WHEEL_OUT : ZOOM_STEP_WHEEL_IN);
+      updateZoom(e.deltaY > 0 ? ZOOM_STEP_OUT : ZOOM_STEP_IN);
     }, { passive: false });
     window.addEventListener("mousemove",  onMouseMove);
     window.addEventListener("mouseup",    onMouseUp);
@@ -539,15 +540,15 @@
     // Escape key
     function onKeyDown(e) {
       if (e.key === "Escape") closeXRayView();
-      const isZoomInKey = e.key === "+" || e.key === "=" || e.code === "NumpadAdd";
-      const isZoomOutKey = e.key === "-" || e.code === "NumpadSubtract";
-      const isZoomResetKey = e.key === "0" || e.code === "Digit0" || e.code === "Numpad0";
+      const isZoomInKey = ZOOM_IN_KEYS.has(e.key) || e.code === "NumpadAdd";
+      const isZoomOutKey = ZOOM_OUT_KEYS.has(e.key) || e.code === "NumpadSubtract";
+      const isZoomResetKey = ZOOM_RESET_KEYS.has(e.key) || e.code === "Digit0" || e.code === "Numpad0";
       if (isZoomInKey) {
         e.preventDefault();
-        updateZoom(ZOOM_STEP_BUTTON_IN);
+        updateZoom(ZOOM_STEP_IN);
       } else if (isZoomOutKey) {
         e.preventDefault();
-        updateZoom(ZOOM_STEP_BUTTON_OUT);
+        updateZoom(ZOOM_STEP_OUT);
       } else if (isZoomResetKey) {
         e.preventDefault();
         resetZoom();
