@@ -8,6 +8,9 @@
   const MIN_SIZE    = 6;        // px — skip elements smaller than this
   const MIN_ZOOM    = 0.35;
   const MAX_ZOOM    = 3;
+  const MIN_FOCUS_ZOOM = 0.7;
+  const ZOOM_IN_FACTOR = 1.1;
+  const ZOOM_OUT_FACTOR = 1 / ZOOM_IN_FACTOR;
 
   // ── State ──────────────────────────────────────────────────────────────────
   let enabled      = true;
@@ -360,7 +363,14 @@
     });
 
     function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-    function setAlpha(color, alpha) { return color.replace(/[\d.]+\)$/, `${alpha})`); }
+    const minFocusZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, MIN_FOCUS_ZOOM));
+    function setAlpha(color, alpha) {
+      const match = color.match(/^rgba?\(([^)]+)\)$/);
+      if (!match) return color;
+      const parts = match[1].split(",").map((part) => part.trim());
+      if (parts.length < 3) return color;
+      return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${alpha})`;
+    }
     function applyStageTransform() {
       stage.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale(${zoom})`;
     }
@@ -432,7 +442,7 @@
     function setFocus(node) {
       focusedNode = node;
       resetFocusBtn.style.display = "inline-block";
-      zoom = clamp(Math.max(zoom, 1.2), MIN_ZOOM, MAX_ZOOM);
+      zoom = clamp(Math.max(zoom, minFocusZoom), MIN_ZOOM, MAX_ZOOM);
       applyStageTransform();
       infoBar.textContent = `Focused: ${getCssSelector(node)}  ·  showing parents + children`;
       renderCards();
@@ -560,7 +570,7 @@
     function onWheel(e) {
       e.preventDefault();
       zoom = clamp(
-        zoom * (e.deltaY > 0 ? 0.92 : 1.09),
+        zoom * (e.deltaY > 0 ? ZOOM_OUT_FACTOR : ZOOM_IN_FACTOR),
         MIN_ZOOM,
         MAX_ZOOM
       );
@@ -576,11 +586,11 @@
       }
       if (e.key === "+" || e.key === "=") {
         e.preventDefault();
-        zoom = clamp(zoom * 1.12, MIN_ZOOM, MAX_ZOOM);
+        zoom = clamp(zoom * ZOOM_IN_FACTOR, MIN_ZOOM, MAX_ZOOM);
         applyStageTransform();
       } else if (e.key === "-" || e.key === "_") {
         e.preventDefault();
-        zoom = clamp(zoom * 0.9, MIN_ZOOM, MAX_ZOOM);
+        zoom = clamp(zoom * ZOOM_OUT_FACTOR, MIN_ZOOM, MAX_ZOOM);
         applyStageTransform();
       } else if (e.key === "0") {
         e.preventDefault();
