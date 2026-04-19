@@ -6,6 +6,8 @@
   const XRAY_ID     = "dommap-xray-overlay";
   const MAX_CARDS   = 400;      // max DOM cards rendered in 3D view
   const MIN_SIZE    = 6;        // px — skip elements smaller than this
+  const MIN_ZOOM    = 0.35;
+  const MAX_ZOOM    = 3;
 
   // ── State ──────────────────────────────────────────────────────────────────
   let enabled      = true;
@@ -221,9 +223,10 @@
       gap: "18px",
     });
     helpBar.innerHTML =
-      "<span>🖱 <b>Drag</b> to rotate</span>" +
-      "<span>🖱 <b>Click</b> element to select</span>" +
-      "<span>⌨ <b>Esc</b> to close</span>";
+      "<span>🖱 <b>Drag</b> rotate</span>" +
+      "<span>🛞 <b>Wheel</b> zoom</span>" +
+      "<span>🖱 <b>Click</b> focus context</span>" +
+      "<span>⌨ <b>Esc</b> close</span>";
     xrayOverlay.appendChild(helpBar);
 
     // Close button (top-right)
@@ -245,6 +248,25 @@
     closeBtn.textContent = "✕ Close";
     closeBtn.addEventListener("click", closeXRayView);
     xrayOverlay.appendChild(closeBtn);
+
+    const resetFocusBtn = document.createElement("button");
+    Object.assign(resetFocusBtn.style, {
+      position: "absolute",
+      top: "10px",
+      right: "106px",
+      zIndex: "20",
+      background: "rgba(0, 90, 160, 0.22)",
+      color: "#9ed8ff",
+      border: "1px solid rgba(80,160,255,0.45)",
+      borderRadius: "6px",
+      padding: "5px 12px",
+      cursor: "pointer",
+      fontFamily: "ui-monospace, monospace",
+      fontSize: "12px",
+      display: "none",
+    });
+    resetFocusBtn.textContent = "↺ Reset Focus";
+    xrayOverlay.appendChild(resetFocusBtn);
 
     // Element count badge (top-left)
     const countBadge = document.createElement("div");
@@ -312,7 +334,7 @@
       textOverflow: "ellipsis",
       pointerEvents: "none",
     });
-    infoBar.textContent = "Hover an element to see its CSS selector";
+    infoBar.textContent = "Hover to inspect · click a card to focus its connected context";
     xrayOverlay.appendChild(infoBar);
 
     // ── 3D scene ──────────────────────────────────────────────────────────
@@ -324,8 +346,8 @@
       perspectiveOrigin: "50% 46%",
     });
 
-    // Initial rotation angles
-    let rotX = 28, rotY = -18;
+    // Initial camera values
+    let rotX = 28, rotY = -18, zoom = 1;
 
     const stage = document.createElement("div");
     Object.assign(stage.style, {
@@ -335,6 +357,90 @@
       transform: `rotateX(${rotX}deg) rotateY(${rotY}deg)`,
       transformOrigin: "50% 50%",
       willChange: "transform",
+    });
+
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+    function setAlpha(color, alpha) { return color.replace(/[\d.]+\)$/, `${alpha})`); }
+    function applyStageTransform() {
+      stage.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale(${zoom})`;
+    }
+
+    const cards = [];
+    let focusedNode = null;
+
+    function relationToFocus(node) {
+      if (!focusedNode) return "";
+      if (node === focusedNode) return "focus";
+      if (focusedNode.contains(node)) return "child";
+      if (node.contains(focusedNode)) return "parent";
+      return "";
+    }
+
+    function renderCards() {
+      cards.forEach((entry) => {
+        const relation = relationToFocus(entry.node);
+        const hovered = entry.hovered;
+        const card = entry.card;
+        let bg = entry.bgColor;
+        let bd = entry.bdColor;
+        let opacity = 1;
+        let shadow = "";
+        let z = entry.zOffset;
+
+        if (focusedNode) {
+          if (relation === "focus") {
+            bg = setAlpha(entry.bgColor, 0.8);
+            bd = setAlpha(entry.bdColor, 1);
+            shadow = `0 0 16px ${entry.bdColor}, 0 0 9px rgba(255,255,255,0.2)`;
+            z += Z_STEP * 5;
+          } else if (relation) {
+            bg = setAlpha(entry.bgColor, 0.6);
+            bd = setAlpha(entry.bdColor, 0.95);
+            shadow = `0 0 10px ${entry.bdColor}`;
+            opacity = 0.92;
+            z += Z_STEP * 2;
+          } else {
+            opacity = 0.12;
+            bg = setAlpha(entry.bgColor, 0.08);
+            bd = setAlpha(entry.bdColor, 0.2);
+          }
+        }
+
+        if (hovered) {
+          bg = setAlpha(entry.bgColor, focusedNode ? 0.72 : 0.55);
+          bd = setAlpha(entry.bdColor, 0.97);
+          shadow = `0 0 14px ${entry.bdColor}, 0 0 5px rgba(255,255,255,0.08)`;
+          opacity = Math.max(opacity, focusedNode ? 0.96 : 1);
+          z += Z_STEP;
+        }
+
+        card.style.background  = bg;
+        card.style.borderColor = bd;
+        card.style.boxShadow   = shadow;
+        card.style.opacity     = String(opacity);
+        card.style.transform   = `translateZ(${z}px)`;
+      });
+    }
+
+    function clearFocus() {
+      focusedNode = null;
+      resetFocusBtn.style.display = "none";
+      infoBar.textContent = "Hover to inspect · click a card to focus its connected context";
+      renderCards();
+    }
+
+    function setFocus(node) {
+      focusedNode = node;
+      resetFocusBtn.style.display = "inline-block";
+      zoom = clamp(Math.max(zoom, 1.2), MIN_ZOOM, MAX_ZOOM);
+      applyStageTransform();
+      infoBar.textContent = `Focused: ${getCssSelector(node)}  ·  showing parents + children`;
+      renderCards();
+    }
+
+    resetFocusBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      clearFocus();
     });
 
     // ── Cards ─────────────────────────────────────────────────────────────
@@ -360,6 +466,8 @@
         overflow:    "hidden",
         transition:  "background 0.12s, border-color 0.12s, box-shadow 0.12s",
       });
+      const cardState = { card, node, bgColor, bdColor, zOffset, hovered: false };
+      cards.push(cardState);
 
       // Label text
       if (rect.height >= 14 && rect.width >= 32) {
@@ -390,31 +498,25 @@
 
       // Hover: brighten card + show selector
       card.addEventListener("mouseenter", () => {
-        card.style.background  = bgColor.replace(/[\d.]+\)$/, "0.55)");
-        card.style.borderColor = bdColor.replace(/[\d.]+\)$/, "0.95)");
-        card.style.boxShadow   = `0 0 14px ${bdColor}, 0 0 5px rgba(255,255,255,0.08)`;
+        cardState.hovered = true;
+        renderCards();
         infoBar.textContent    = getCssSelector(node);
       });
       card.addEventListener("mouseleave", () => {
-        card.style.background  = bgColor;
-        card.style.borderColor = bdColor;
-        card.style.boxShadow   = "";
+        cardState.hovered = false;
+        renderCards();
+        if (focusedNode) {
+          infoBar.textContent = `Focused: ${getCssSelector(focusedNode)}  ·  showing parents + children`;
+        } else {
+          infoBar.textContent = "Hover to inspect · click a card to focus its connected context";
+        }
       });
 
-      // Click: close view, scroll to element, flash it, copy selector
+      // Click: keep view open and focus selected node's connected context
       card.addEventListener("click", (e) => {
         e.stopPropagation();
         const sel = getCssSelector(node);
-        closeXRayView();
-        const savedOutline = node.style.outline;
-        const savedOffset  = node.style.outlineOffset;
-        node.style.outline      = "3px solid #00ffcc";
-        node.style.outlineOffset = "2px";
-        node.scrollIntoView({ behavior: "smooth", block: "center" });
-        setTimeout(() => {
-          node.style.outline      = savedOutline;
-          node.style.outlineOffset = savedOffset;
-        }, 2800);
+        setFocus(node);
         if (navigator.clipboard) {
           navigator.clipboard.writeText(sel).catch(() => {});
         }
@@ -425,12 +527,13 @@
 
     scene.appendChild(stage);
     xrayOverlay.appendChild(scene);
+    renderCards();
 
     // ── Drag-to-rotate ────────────────────────────────────────────────────
     let dragging = false, dragX = 0, dragY = 0;
 
     function onMouseDown(e) {
-      if (e.target === closeBtn) return;
+      if (e.target === closeBtn || e.target === resetFocusBtn) return;
       dragging = true;
       dragX = e.clientX;
       dragY = e.clientY;
@@ -443,7 +546,7 @@
       rotX   = Math.max(-85, Math.min(85, rotX));
       dragX  = e.clientX;
       dragY  = e.clientY;
-      stage.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+      applyStageTransform();
     }
     function onMouseUp() {
       dragging = false;
@@ -454,9 +557,36 @@
     window.addEventListener("mousemove",  onMouseMove);
     window.addEventListener("mouseup",    onMouseUp);
 
+    function onWheel(e) {
+      e.preventDefault();
+      zoom = clamp(
+        zoom * (e.deltaY > 0 ? 0.92 : 1.09),
+        MIN_ZOOM,
+        MAX_ZOOM
+      );
+      applyStageTransform();
+    }
+    xrayOverlay.addEventListener("wheel", onWheel, { passive: false });
+
     // Escape key
     function onKeyDown(e) {
-      if (e.key === "Escape") closeXRayView();
+      if (e.key === "Escape") {
+        closeXRayView();
+        return;
+      }
+      if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        zoom = clamp(zoom * 1.12, MIN_ZOOM, MAX_ZOOM);
+        applyStageTransform();
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        zoom = clamp(zoom * 0.9, MIN_ZOOM, MAX_ZOOM);
+        applyStageTransform();
+      } else if (e.key === "0") {
+        e.preventDefault();
+        zoom = 1;
+        applyStageTransform();
+      }
     }
     document.addEventListener("keydown", onKeyDown);
 
@@ -465,18 +595,19 @@
       document.documentElement.style.overflow = savedOverflow;
       window.removeEventListener("mousemove",  onMouseMove);
       window.removeEventListener("mouseup",    onMouseUp);
+      xrayOverlay.removeEventListener("wheel", onWheel);
       document.removeEventListener("keydown",  onKeyDown);
     };
 
     // ── Animate in ────────────────────────────────────────────────────────
     stage.style.opacity   = "0";
-    stage.style.transform = "rotateX(0deg) rotateY(0deg) scale(0.92)";
+    stage.style.transform = "rotateX(0deg) rotateY(0deg) scale(0.88)";
     document.documentElement.appendChild(xrayOverlay);
     document.documentElement.style.overflow = "hidden";
 
     requestAnimationFrame(() => requestAnimationFrame(() => {
       stage.style.transition = "transform 0.55s cubic-bezier(0.23,1,0.32,1), opacity 0.35s ease";
-      stage.style.transform  = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+      applyStageTransform();
       stage.style.opacity    = "1";
     }));
   }

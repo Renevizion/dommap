@@ -55,8 +55,11 @@ Open it two ways:
 Once open:
 
 - **Drag** anywhere to rotate the 3D scene
+- **Mouse wheel** (or `+` / `-`) to zoom in and out, `0` to reset zoom
 - **Hover** a card to see its CSS selector in the info bar
-- **Click** a card to: close the view, scroll the real element into view, flash it with a teal outline, and **copy its selector to your clipboard**
+- **Click** a card to focus its connected context (parents + children) while staying inside the 3D environment
+- Use **↺ Reset Focus** to return to the full map
+- Clicking still **copies the selector to your clipboard**
 - Press **`Esc`** or click **✕ Close** to exit
 
 ### Popup toggle
@@ -94,4 +97,3 @@ dommap/
 └── icons/
     └── icon.svg    Extension icon
 ```
-
